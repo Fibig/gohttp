@@ -16,6 +16,7 @@ func (r HTTPResponse) String() string {
 	for k, v := range r.Headers {
 		response += fmt.Sprintf("%s:%s\r\n", k, v)
 	}
+
 	response += "\r\n" + string(r.Body)
 	return response
 }

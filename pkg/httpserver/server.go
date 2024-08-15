@@ -6,9 +6,6 @@ import (
 	"net"
 	"net/http"
 	"strconv"
-	"time"
-
-	"github.com/gabriel-vasile/mimetype"
 )
 
 type HttpServer struct {
@@ -16,10 +13,12 @@ type HttpServer struct {
 	port uint16
 }
 
-const CLRF = "\r\n"
-const HttpVersion = "1.1"
-const HttpServerName = "FibigHttpServerYeah"
-const RequestBodyLimit = 1024 * 100
+var (
+	CLRF             = "\r\n"
+	HttpVersion      = "1.1"
+	HttpServerName   = "FibigHttpServerYeah"
+	RequestBodyLimit = 1024 * 100
+)
 
 func NewHttpServer(host string, port uint16) (*HttpServer, error) {
 	return &HttpServer{host: host, port: port}, nil
@@ -105,33 +104,4 @@ func getResponse(status int, additionalHeaders map[string]string, responseBody *
 
 func getResponseStartLine(status int) string {
 	return "HTTP/" + HttpVersion + " " + strconv.Itoa(status) + " " + http.StatusText(status) + CLRF
-}
-
-func getResponseHeaders(contentType, contentLength string, additionalHeaders map[string]string) string {
-	// set must need headers
-	headers := map[string]string{
-		HeaderServer:        HttpServerName,
-		HeaderContentType:   contentType,
-		HeaderContentLength: contentLength,
-		HeaderDate:          time.Now().UTC().String(),
-	}
-
-	// add to/overwrite headers with additional headers
-	maps.Copy(headers, additionalHeaders)
-
-	// transform all headers to string
-	headersString := ""
-	for k, v := range headers {
-		headersString += k + ":" + v + CLRF
-	}
-
-	return headersString
-}
-
-func getContentType(data []byte) string {
-	return mimetype.Detect(data).String()
-}
-
-func getContentLength(data []byte) string {
-	return strconv.Itoa(len(data))
 }
