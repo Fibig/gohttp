@@ -3,6 +3,8 @@ package httpserver
 import (
 	"bytes"
 	"fmt"
+	"net"
+	"net/http"
 	"strconv"
 	"strings"
 )
@@ -66,4 +68,53 @@ func NewHttpRequest(data []byte) (*HttpRequest, error) {
 		Headers:     headers,
 		BodyRaw:     bodyRaw,
 	}, nil
+}
+
+func handleRequest(conn net.Conn, server *HttpServer) {
+	defer conn.Close()
+
+	// Create a buffer to read data into
+	buffer := make([]byte, RequestBodyLimit)
+
+	// read into buffer
+	bufferEnd, err := conn.Read(buffer)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	// Parse Request and create instance of HttpRequest Type
+	request, err := NewHttpRequest(buffer[:bufferEnd])
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	// Routing
+	response := []byte{}
+
+	// Check if route exists
+	isRouteExisting := false
+	for _, route := range *server.Routes {
+		fmt.Printf("%s ? %s\n", route.Path, request.Path[1:])
+		if strings.HasPrefix(request.Path[1:], route.Path) {
+			fmt.Println("Route match: " + route.Path)
+			response = route.Func(*request)
+			isRouteExisting = true
+			break
+		}
+	}
+
+	// 404 Not Found
+	if !isRouteExisting {
+		notFoundBody := []byte("404 NOT FOUND")
+		response, err = GetResponse(http.StatusNotFound, map[string]string{}, &notFoundBody, GzipCompress)
+	}
+
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	conn.Write(response)
 }
